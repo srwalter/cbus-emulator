@@ -8,35 +8,36 @@
 main:
         nop
         goto $-1
-        end
 
-        macro test_clk
-        btf     PORTB, 0
+test_clk macro
+        movlw     0x10
+        andwf     PORTB, W
         endm
 
-        macro wait_clk_low
+wait_clk_low macro
         test_clk
         skpz
         goto $-2
         endm
 
-        macro wait_clk_high
+wait_clk_high macro
         test_clk
         skpnz
         goto $-2
         endm
 
-        macro test_data
-        btf     PORTB, 1
+test_data macro
+        movlw   0x20
+        andwf   PORTB, W
         endm
 
-        macro wait_data_low
+wait_data_low macro
         test_clk
         skpz
         goto $-2
         endm
 
-        macro wait_data_high
+wait_data_high macro
         test_clk
         skpnz
         goto $-2
@@ -50,7 +51,7 @@ burst_loop:
         wait_clk_low
         wait_clk_high
 
-        rolf    0x20, F
+        rlf     0x20, F
         test_data
         skpz
         bsf     0x20, 0
@@ -67,5 +68,5 @@ burst_loop:
         wait_clk_high
 
         movfw   0x20
-        ret
+        return
         ; end decode_burst
