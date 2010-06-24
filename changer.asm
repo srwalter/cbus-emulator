@@ -2,10 +2,33 @@
         include "p16f648a.inc"
         __CONFIG _HS_OSC
 
+        CONSTANT IRQ_W=0x7f
+        CONSTANT IRQ_STATUS=0x7e
+
         org 0
         goto main
+        nop
+        nop
+        nop
+        goto irq
 
 main:
+        bsf     STATUS, RP0
+        bsf     TRISB, 1
+        bsf     TRISB, 2
+        bsf     TRISB, 4
+        bsf     TRISB, 5
+        bsf     TXSTA, TXEN
+        bcf     STATUS, RP0
+
+        movlw   0xf ; 19200 @ 20MHz
+        bcf     RCSTA, SYNC
+        bsf     RCSTA, SPEN
+
+        bsf     STATUS, GIE
+        bcf     STATUS, RBIF
+        bsf     STATUS, RBIE
+
         nop
         goto $-1
 
@@ -70,3 +93,41 @@ burst_loop:
         movfw   0x20
         return
         ; end decode_burst
+
+irq:
+        movwf   IRQ_W
+        swapf   STATUS, W
+        movwf   IRQ_STATUS
+
+        btfsc   STATUS, RBIF
+        call    bus_activity
+        ;btfsc   PIR1, TXIF
+        ;call    tx_ready
+
+        swapf   IRQ_STATUS, W
+        movwf   STATUS
+        swapf   IRQ_W, F
+        swapf   IRQ_W, W
+        retfie
+        ; end of irq
+
+bus_activity:
+        bcf     STATUS, RBIF
+        call    decode_burst
+        movwf   TXREG
+        return
+        ; end of bus_activity
+
+tx_ready:
+        bsf     STATUS, RP0
+        movfw   PIE1
+        bcf     STATUS, RP0
+        movwf   0x20
+        btfss   0x20, TXIE
+        return
+
+        nop
+        return
+        ; end of tx_ready
+
+        end
