@@ -21,8 +21,8 @@ start
         .sim "attach n0 portb2 U1.RXPIN"
         .sim "attach n1 portb1 U1.TXPIN"
 
-        .sim "U1.txbaud = 9600"
-        .sim "U1.rxbaud = 9600"
+        .sim "U1.txbaud = 19200"
+        .sim "U1.rxbaud = 19200"
 
         org 0
         goto main
@@ -56,42 +56,24 @@ main:
         clrwdt
         goto    $-2
 
-test_clk macro
-        movlw     0x10
-        andwf     PORTB, W
-        endm
-
 wait_clk_low macro
-        test_clk
-        clrwdt
-        skpz
-        goto $-4
+        btfsc   PORTB, 4
+        goto    $-1
         endm
 
 wait_clk_high macro
-        test_clk
-        clrwdt
-        skpnz
-        goto $-4
-        endm
-
-test_data macro
-        movlw   0x20
-        andwf   PORTB, W
+        btfss   PORTB, 4
+        goto    $-1
         endm
 
 wait_data_low macro
-        test_clk
-        clrwdt
-        skpz
-        goto $-4
+        btfsc   PORTB, 5
+        goto    $-1
         endm
 
 wait_data_high macro
-        test_clk
-        clrwdt
-        skpnz
-        goto $-4
+        btfss   PORTB, 5
+        goto    $-1
         endm
 
 decode_burst:
@@ -103,13 +85,10 @@ burst_loop:
         wait_clk_high
 
         rlf     0x20, F
-        test_data
-        skpz
+        btfsc   PORTB, 5
         bsf     0x20, 0
         incf    0x21, F
-        movlw   8
-        subwf   0x21, W
-        skpz
+        btfss   0x21, 3
         goto    burst_loop
 
         ; wait for pulse to end
