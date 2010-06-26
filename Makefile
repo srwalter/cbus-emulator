@@ -1,8 +1,11 @@
 
 all: changer.hex
 
-%.hex: %.asm
-	gpasm -i $<
+%.o: %.asm
+	gpasm -c $<
+
+%.hex: %.o
+	gplink --map -s 16f648a.lkr -o $@ $<
 
 .PHONY: clean
 
