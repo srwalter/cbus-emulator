@@ -52,24 +52,9 @@ main:
         bsf     INTCON, RBIE
         bsf     INTCON, PEIE
 
-        ; test serial port
-
-        bsf     STATUS, RP0
-        movlw   A'S'
-        movwf   XMIT_BUF
-test:
-        bcf     STATUS, RP0
-        bsf     PORTB, 0
-        bsf     STATUS, RP0
-
-        bsf     PIE1^0x80, TXIE
-        btfsc   PIE1^0x80, TXIE
-        goto    $-1
-
-        bcf     STATUS, RP0
-        bcf     PORTB, 0
-        bsf     STATUS, RP0
-        goto    test
+        nop
+        clrwdt
+        goto    $-2
 
 test_clk macro
         movlw     0x10
@@ -78,14 +63,16 @@ test_clk macro
 
 wait_clk_low macro
         test_clk
+        clrwdt
         skpz
-        goto $-2
+        goto $-4
         endm
 
 wait_clk_high macro
         test_clk
+        clrwdt
         skpnz
-        goto $-2
+        goto $-4
         endm
 
 test_data macro
@@ -95,14 +82,16 @@ test_data macro
 
 wait_data_low macro
         test_clk
+        clrwdt
         skpz
-        goto $-2
+        goto $-4
         endm
 
 wait_data_high macro
         test_clk
+        clrwdt
         skpnz
-        goto $-2
+        goto $-4
         endm
 
 decode_burst:
@@ -151,9 +140,12 @@ irq:
         ; end of irq
 
 bus_activity:
-        bcf     INTCON, RBIF
         call    decode_burst
+        bcf     INTCON, RBIF
         movwf   XMIT_BUF
+        bsf     STATUS, RP0
+        bsf     PIE1^0x80, TXIE
+        bcf     STATUS, RP0
         return
         ; end of bus_activity
 
