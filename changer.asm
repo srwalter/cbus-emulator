@@ -79,20 +79,75 @@ wait_data_high macro
 decode_burst:
         clrf    0x20
         clrf    0x21
+        movlw   0x30
+        movwf   FSR
 
-burst_loop:
         wait_clk_low
         wait_clk_high
+        movfw   PORTB
+        movwf   INDF
+        incf    FSR, F
 
+        wait_clk_low
+        wait_clk_high
+        movfw   PORTB
+        movwf   INDF
+        incf    FSR, F
+
+        wait_clk_low
+        wait_clk_high
+        movfw   PORTB
+        movwf   INDF
+        incf    FSR, F
+
+        wait_clk_low
+        wait_clk_high
+        movfw   PORTB
+        movwf   INDF
+        incf    FSR, F
+
+        wait_clk_low
+        wait_clk_high
+        movfw   PORTB
+        movwf   INDF
+        incf    FSR, F
+
+        wait_clk_low
+        wait_clk_high
+        movfw   PORTB
+        movwf   INDF
+        incf    FSR, F
+
+        wait_clk_low
+        wait_clk_high
+        movfw   PORTB
+        movwf   INDF
+        incf    FSR, F
+
+        wait_clk_low
+        wait_clk_high
+        movfw   PORTB
+        movwf   INDF
+        incf    FSR, F
+
+        ; wait for delay to start
+        wait_data_high
+
+        ; compress 8 bytes to one
+        movlw   0x30
+        movwf   FSR
+        clrf    0x20
+        bcf     STATUS, C
+
+decode_loop:
         rlf     0x20, F
-        btfsc   PORTB, 5
+        btfsc   INDF, 5
         bsf     0x20, 0
-        incf    0x21, F
-        btfss   0x21, 3
-        goto    burst_loop
+        incf    FSR, F
+        btfss   FSR, 3
+        goto    decode_loop
 
         ; wait for pulse to end
-        wait_data_high
         wait_data_low
         wait_data_high
         wait_clk_high
