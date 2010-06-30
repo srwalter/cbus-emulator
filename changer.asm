@@ -48,13 +48,7 @@ main:
         bcf     STATUS, RP0
 
         bsf     INTCON, GIE
-        bcf     INTCON, RBIF
-        bsf     INTCON, RBIE
         bsf     INTCON, PEIE
-
-        nop
-        clrwdt
-        goto    $-2
 
 wait_clk_low macro
         btfsc   PORTB, 4
@@ -76,54 +70,72 @@ wait_data_high macro
         goto    $-1
         endm
 
+        wait_clk_high
+        wait_data_high
+
+        bcf     INTCON, RBIF
+        bsf     INTCON, RBIE
+
+        nop
+        clrwdt
+        goto    $-2
+
 decode_burst:
         clrf    0x20
         clrf    0x21
         movlw   0x30
         movwf   FSR
 
+        ; Bit 0 (MSB)
         wait_clk_low
         wait_clk_high
         movfw   PORTB
         movwf   INDF
         incf    FSR, F
 
+        ; Bit 1
         wait_clk_low
         wait_clk_high
         movfw   PORTB
         movwf   INDF
         incf    FSR, F
 
+        ; Bit 2
         wait_clk_low
         wait_clk_high
         movfw   PORTB
         movwf   INDF
         incf    FSR, F
 
+        ; Bit 3
         wait_clk_low
         wait_clk_high
         movfw   PORTB
         movwf   INDF
         incf    FSR, F
 
+        ; Bit 4
         wait_clk_low
         wait_clk_high
         movfw   PORTB
         movwf   INDF
         incf    FSR, F
 
+        ; Bit 5
         wait_clk_low
         wait_clk_high
         movfw   PORTB
         movwf   INDF
         incf    FSR, F
 
+        ; Bit 6
         wait_clk_low
         wait_clk_high
         movfw   PORTB
         movwf   INDF
         incf    FSR, F
 
+        ; Bit 7 (LSB)
         wait_clk_low
         wait_clk_high
         movfw   PORTB
