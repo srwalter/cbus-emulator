@@ -7,6 +7,7 @@
         CONSTANT IRQ_W=0x7f
         CONSTANT IRQ_STATUS=0x7e
         CONSTANT XMIT_BUF=0x7d
+        CONSTANT LAST_B=0x7c
 
 MAIN CODE
 start
@@ -32,15 +33,23 @@ start
         goto irq
 
 main:
+        clrf    PORTA
+        clrf    PORTB
+        clrf    LAST_B
+        movlw   0x07
+        movwf   CMCON
+
         bcf     RCSTA, SYNC
         bsf     RCSTA, SPEN
 
         bsf     STATUS, RP0
+        bcf     OPTION_REG^0x80, T0CS
         bcf     TRISB^0x80, 0
         bsf     TRISB^0x80, 1
         bsf     TRISB^0x80, 2
         bsf     TRISB^0x80, 4
         bsf     TRISB^0x80, 5
+        clrf    TRISA^0x80
 
         movlw   15 ; 19200 @ 20MHz
         movwf   SPBRG^0x80
@@ -81,6 +90,8 @@ wait_data_high macro
         goto    $-2
 
 decode_burst:
+        bsf     PORTB, 0
+        clrf    PORTA
         clrf    0x20
         clrf    0x21
         movlw   0x30
@@ -88,6 +99,8 @@ decode_burst:
 
         ; Bit 0 (MSB)
         wait_clk_low
+        movlw   1
+        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -95,6 +108,8 @@ decode_burst:
 
         ; Bit 1
         wait_clk_low
+        movlw   2
+        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -102,6 +117,8 @@ decode_burst:
 
         ; Bit 2
         wait_clk_low
+        movlw   3
+        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -109,6 +126,8 @@ decode_burst:
 
         ; Bit 3
         wait_clk_low
+        movlw   4
+        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -116,6 +135,8 @@ decode_burst:
 
         ; Bit 4
         wait_clk_low
+        movlw   5
+        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -123,6 +144,8 @@ decode_burst:
 
         ; Bit 5
         wait_clk_low
+        movlw   6
+        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -130,6 +153,8 @@ decode_burst:
 
         ; Bit 6
         wait_clk_low
+        movlw   7
+        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -137,6 +162,8 @@ decode_burst:
 
         ; Bit 7 (LSB)
         wait_clk_low
+        movlw   8
+        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -144,6 +171,8 @@ decode_burst:
 
         ; wait for delay to start
         wait_data_high
+        movlw   9
+        movwf   PORTA
 
         ; compress 8 bytes to one
         movlw   0x30
@@ -159,12 +188,25 @@ decode_loop:
         btfss   FSR, 3
         goto    decode_loop
 
+        movlw   10
+        movwf   PORTA
         ; wait for pulse to end
         wait_data_low
+        movlw   11
+        movwf   PORTA
         wait_data_high
+        movlw   12
+        movwf   PORTA
         wait_clk_high
 
+        ; Enforce minimum idle time (~12uS)
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
         movfw   0x20
+        bcf     PORTB, 0
         return
         ; end decode_burst
 
