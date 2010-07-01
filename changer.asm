@@ -7,7 +7,6 @@
         CONSTANT IRQ_W=0x7f
         CONSTANT IRQ_STATUS=0x7e
         CONSTANT XMIT_BUF=0x7d
-        CONSTANT LAST_B=0x7c
 
 MAIN CODE
 start
@@ -35,7 +34,6 @@ start
 main:
         clrf    PORTA
         clrf    PORTB
-        clrf    LAST_B
         movlw   0x07
         movwf   CMCON
 
@@ -82,15 +80,7 @@ wait_data_high macro
         wait_clk_high
         wait_data_high
 
-        bcf     INTCON, RBIF
-        bsf     INTCON, RBIE
-
-        nop
-        clrwdt
-        goto    $-2
-
 decode_burst:
-        bsf     PORTB, 0
         clrf    PORTA
         clrf    0x20
         clrf    0x21
@@ -99,6 +89,7 @@ decode_burst:
 
         ; Bit 0 (MSB)
         wait_clk_low
+        bsf     PORTB, 0
         movlw   1
         movwf   PORTA
         wait_clk_high
@@ -199,24 +190,20 @@ decode_loop:
         movwf   PORTA
         wait_clk_high
 
-        ; Enforce minimum idle time (~12uS)
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
+        bcf     PORTB, 0
 
         movfw   0x20
-        bcf     PORTB, 0
-        return
-        ; end decode_burst
+        movwf   XMIT_BUF
+        bsf     STATUS, RP0
+        bsf     PIE1^0x80, TXIE
+        bcf     STATUS, RP0
+        goto    decode_burst
 
 irq:
         movwf   IRQ_W
         swapf   STATUS, W
         movwf   IRQ_STATUS
 
-        btfsc   INTCON, RBIF
-        call    bus_activity
         btfsc   PIR1, TXIF
         call    tx_ready
 
@@ -226,16 +213,6 @@ irq:
         swapf   IRQ_W, W
         retfie
         ; end of irq
-
-bus_activity:
-        call    decode_burst
-        bcf     INTCON, RBIF
-        movwf   XMIT_BUF
-        bsf     STATUS, RP0
-        bsf     PIE1^0x80, TXIE
-        bcf     STATUS, RP0
-        return
-        ; end of bus_activity
 
 tx_ready:
         bsf     STATUS, RP0
