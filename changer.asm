@@ -9,7 +9,12 @@
         CONSTANT UART_BUF=0x7d
         CONSTANT COMMAND=0x7c
 
+        CONSTANT XFER_TMP_BUF=0x30
+        CONSTANT RESP_BUF=0x40
+        CONSTANT RESP_BUF_LEN=0x4F
+
         ; 0x30 - 0x38 send/receive temp space
+        ; 0x40 - 0x4E command response buffer
 
 MAIN CODE
 start
@@ -87,7 +92,7 @@ decode_burst:
         clrf    PORTA
         clrf    0x20
         clrf    0x21
-        movlw   0x30
+        movlw   XFER_TMP_BUF
         movwf   FSR
 
         ; Bit 0 (MSB)
@@ -171,7 +176,7 @@ decode_burst:
         bsf     INTCON, GIE
 
         ; compress 8 bytes to one
-        movlw   0x30
+        movlw   XFER_TMP_BUF
         movwf   FSR
         clrf    0x20
         bcf     STATUS, C
@@ -191,27 +196,40 @@ decode_loop:
 
         movfw   0x20
         movwf   UART_BUF
-        movwf   COMMAND
         bsf     STATUS, RP0
         bsf     PIE1^0x80, TXIE
         bcf     STATUS, RP0
 
-        ; movlw   0x09
-        ; subwf   COMMAND, W
-        ; skpnz
-        ; call    cmd_09
-        ; movlw   0x4c
-        ; subwf   COMMAND, W
-        ; skpnz
-        ; call    cmd_4c
+        ; sets up CMD_BUF_LEN and buffer contents
+        call    command_logic
 
+        movlw   RESP_BUF
+        movwf   FSR
+
+send_next_byte:
+        movfw   INDF
+        call    send_byte
+        incf    FSR, F
+        decf    RESP_BUF_LEN, F
+        skpz
+        goto    send_next_byte
+
+        call    ack_byte
+        goto    decode_burst
+        ; end main
+
+        ; must preserve FSR
+send_byte:
+        movwf   0x20
+        movfw   FSR
+        movwf   0x21
         ; blow out one byte to 8
-        movlw   0x30
+        movlw   XFER_TMP_BUF
         movwf   FSR
 
 encode_loop:
         movlw   0xdf
-        rlf     COMMAND, F
+        rlf     0x20, F
         btfsc   STATUS, C
         iorlw    0x20
         movwf   INDF
@@ -225,7 +243,7 @@ encode_loop:
         
         call    ack_byte
 
-        movlw   0x30
+        movlw   XFER_TMP_BUF
         movwf   FSR
         movfw   INDF
 
@@ -308,10 +326,18 @@ encode_loop:
         bsf     TRISB^0x80, 5
         bcf     STATUS, RP0
 
-        call    ack_byte
-        goto    decode_burst
+        ; restore FSR
+        movfw   0x21
+        movwf   FSR
+        return
+        ; end send_byte
 
 ack_byte:
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
         clrf    TMR0
         bcf     INTCON, T0IF
         btfss   INTCON, T0IF
@@ -339,6 +365,44 @@ ack_byte:
         bcf     STATUS, RP0
         wait_clk_high
         return
+
+command_logic:
+        clrf    RESP_BUF_LEN
+        movwf   COMMAND
+        movwf   RESP_BUF
+        movlw   RESP_BUF
+        movwf   FSR
+        incf    FSR, F
+        incf    RESP_BUF_LEN, F
+
+        movlw   0x09
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_09
+        return
+
+cmd_09:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        movlw   0x1a
+        call    enqueue_byte
+        return
+        ; end command_logic
+
+enqueue_byte:
+        movwf   INDF
+        incf    FSR, F
+        incf    RESP_BUF_LEN, F
+        xorlw   0xff
+        movwf   INDF
+        incf    FSR, F
+        incf    RESP_BUF_LEN, F
+        return
+        ; end enqueue_byte
 
 irq:
         movwf   IRQ_W
