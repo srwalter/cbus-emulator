@@ -389,6 +389,66 @@ command_logic:
         subwf   COMMAND, W
         skpnz
         goto    cmd_09
+
+        movlw   0x4c
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_4c
+
+        movlw   0x45
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_45
+
+        movlw   0x4b
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_4b
+
+        movlw   0x41
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_41
+
+        movlw   0x50
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_50
+
+        movlw   0x51
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_51
+
+        movlw   0xe2
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_e2
+
+        movlw   0x61
+        subwf   COMMAND, W
+        skpnz
+        goto    empty_cmd
+
+        movlw   0x70
+        subwf   COMMAND, W
+        skpnz
+        goto    empty_cmd
+
+        movlw   0x81
+        subwf   COMMAND, W
+        skpnz
+        goto    empty_cmd
+
+        movlw   0x5c
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_5c
+
+        movlw   0xe1
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_e1
         return
 
 cmd_09:
@@ -402,6 +462,108 @@ cmd_09:
         call    enqueue_byte
         return
         ; end command_logic
+
+cmd_4c:
+        movlw   0x02
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        return
+
+cmd_45:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        movlw   0x1a
+        call    enqueue_byte
+        return
+
+cmd_4b:
+        movlw   0x02
+        call    enqueue_byte
+        movlw   0x12
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        return
+
+cmd_41:
+        movlw   0x04
+        call    enqueue_byte
+        movlw   0x1a
+        call    enqueue_byte
+        movlw   0x55
+        call    enqueue_byte
+        movlw   0x50
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        return
+
+cmd_50:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        movlw   0x1a
+        call    enqueue_byte
+        return
+
+cmd_51:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        movlw   0x1a
+        call    enqueue_byte
+        return
+
+cmd_e2:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x42
+        call    enqueue_byte
+        movlw   0xff
+        call    enqueue_byte
+        movlw   0xff
+        call    enqueue_byte
+        return
+
+empty_cmd:
+        movlw   0x00
+        call    enqueue_byte
+        return
+
+cmd_5c:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        movlw   0x06
+        call    enqueue_byte
+        return
+
+cmd_e1:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x41
+        call    enqueue_byte
+        movlw   0xff
+        call    enqueue_byte
+        movlw   0xff
+        call    enqueue_byte
+        return
 
 enqueue_byte:
         movwf   INDF
