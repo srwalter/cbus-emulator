@@ -6,7 +6,10 @@
 
         CONSTANT IRQ_W=0x7f
         CONSTANT IRQ_STATUS=0x7e
-        CONSTANT XMIT_BUF=0x7d
+        CONSTANT UART_BUF=0x7d
+        CONSTANT COMMAND=0x7c
+
+        ; 0x30 - 0x38 send/receive temp space
 
 MAIN CODE
 start
@@ -89,9 +92,8 @@ decode_burst:
 
         ; Bit 0 (MSB)
         wait_clk_low
+        bcf     INTCON, GIE
         bsf     PORTB, 0
-        movlw   1
-        movwf   PORTA
         wait_clk_high
         movfw   PORTB
         movwf   INDF
@@ -165,6 +167,9 @@ decode_burst:
         movlw   9
         movwf   PORTA
 
+        ; end timing-critical
+        bsf     INTCON, GIE
+
         ; compress 8 bytes to one
         movlw   0x30
         movwf   FSR
@@ -181,22 +186,155 @@ decode_loop:
 
         movlw   10
         movwf   PORTA
-        ; wait for pulse to end
-        wait_data_low
-        movlw   11
-        movwf   PORTA
-        wait_data_high
-        movlw   12
-        movwf   PORTA
-        wait_clk_high
 
         bcf     PORTB, 0
 
         movfw   0x20
-        movwf   XMIT_BUF
+        movwf   UART_BUF
+        movwf   COMMAND
         bsf     STATUS, RP0
         bsf     PIE1^0x80, TXIE
         bcf     STATUS, RP0
+
+        ; movlw   0x09
+        ; subwf   COMMAND, W
+        ; skpnz
+        ; call    cmd_09
+        ; movlw   0x4c
+        ; subwf   COMMAND, W
+        ; skpnz
+        ; call    cmd_4c
+
+        ; blow out one byte to 8
+        movlw   0x30
+        movwf   FSR
+
+encode_loop:
+        movlw   0xdf
+        rlf     COMMAND, F
+        btfsc   STATUS, C
+        iorlw    0x20
+        movwf   INDF
+        incf    FSR, F
+        btfss   FSR, 3
+        goto    encode_loop
+
+        ; Use TRISB only since the bus is pulled high
+        bcf     PORTB, 4
+        bcf     PORTB, 5
+        
+        ; ack byte
+        wait_clk_high
+        wait_clk_low
+        bsf     STATUS, RP0
+        bcf     TRISB^0x80, 5
+        bcf     STATUS, RP0
+
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
+        movlw   11
+        movwf   PORTA
+        wait_clk_high
+        movlw   12
+        movwf   PORTA
+        wait_clk_low
+        bsf     STATUS, RP0
+        bsf     TRISB^0x80, 5
+        bcf     STATUS, RP0
+        wait_clk_high
+
+        movlw   0x30
+        movwf   FSR
+        movfw   INDF
+
+        ; Bit 0 (MSB)
+        wait_clk_low
+        bsf     STATUS, RP0
+        movwf   TRISB^0x80
+        bcf     STATUS, RP0
+        bcf     INTCON, GIE
+        wait_clk_high
+        incf    FSR, F
+        movfw   INDF
+
+        ; Bit 1
+        wait_clk_low
+        bsf     STATUS, RP0
+        movwf   TRISB^0x80
+        bcf     STATUS, RP0
+        wait_clk_high
+        incf    FSR, F
+        movfw   INDF
+
+        ; Bit 2
+        wait_clk_low
+        bsf     STATUS, RP0
+        movwf   TRISB^0x80
+        bcf     STATUS, RP0
+        wait_clk_high
+        incf    FSR, F
+        movfw   INDF
+
+        ; Bit 3
+        wait_clk_low
+        bsf     STATUS, RP0
+        movwf   TRISB^0x80
+        bcf     STATUS, RP0
+        wait_clk_high
+        incf    FSR, F
+        movfw   INDF
+
+        ; Bit 4
+        wait_clk_low
+        bsf     STATUS, RP0
+        movwf   TRISB^0x80
+        bcf     STATUS, RP0
+        wait_clk_high
+        incf    FSR, F
+        movfw   INDF
+
+        ; Bit 5
+        wait_clk_low
+        bsf     STATUS, RP0
+        movwf   TRISB^0x80
+        bcf     STATUS, RP0
+        wait_clk_high
+        incf    FSR, F
+        movfw   INDF
+
+        ; Bit 6
+        wait_clk_low
+        bsf     STATUS, RP0
+        movwf   TRISB^0x80
+        bcf     STATUS, RP0
+        wait_clk_high
+        incf    FSR, F
+        movfw   INDF
+
+        ; Bit 7 (LSB)
+        wait_clk_low
+        bsf     STATUS, RP0
+        movwf   TRISB^0x80
+        bcf     STATUS, RP0
+        wait_clk_high
+        incf    FSR, F
+        movfw   INDF
+
+        ; release data line
+        wait_clk_low
+        bsf     STATUS, RP0
+        bsf     TRISB^0x80, 5
+        bcf     STATUS, RP0
+
+        ; wait for delay to end
+        wait_clk_high
+        wait_data_low
+        wait_data_high
+        wait_clk_high
+
         goto    decode_burst
 
 irq:
@@ -225,7 +363,7 @@ tx_ready:
         bsf     STATUS, RP0
         bcf     PIE1^0x80, TXIE
         bcf     STATUS, RP0
-        movfw   XMIT_BUF
+        movfw   UART_BUF
         movwf   TXREG
         return
         ; end of tx_ready
