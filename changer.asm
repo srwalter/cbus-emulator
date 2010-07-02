@@ -223,28 +223,7 @@ encode_loop:
         bcf     PORTB, 4
         bcf     PORTB, 5
         
-        ; ack byte
-        wait_clk_high
-        wait_clk_low
-        bsf     STATUS, RP0
-        bcf     TRISB^0x80, 5
-        bcf     STATUS, RP0
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        movlw   11
-        movwf   PORTA
-        wait_clk_high
-        movlw   12
-        movwf   PORTA
-        wait_clk_low
-        bsf     STATUS, RP0
-        bsf     TRISB^0x80, 5
-        bcf     STATUS, RP0
-        wait_clk_high
+        call    ack_byte
 
         movlw   0x30
         movwf   FSR
@@ -329,13 +308,37 @@ encode_loop:
         bsf     TRISB^0x80, 5
         bcf     STATUS, RP0
 
-        ; wait for delay to end
-        wait_clk_high
-        wait_data_low
-        wait_data_high
-        wait_clk_high
-
+        call    ack_byte
         goto    decode_burst
+
+ack_byte:
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
+        wait_clk_high
+        wait_clk_low
+        bsf     STATUS, RP0
+        bcf     TRISB^0x80, 5
+        bcf     STATUS, RP0
+
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
+        movlw   11
+        movwf   PORTA
+        wait_clk_high
+        movlw   12
+        movwf   PORTA
+        wait_clk_low
+        bsf     STATUS, RP0
+        bsf     TRISB^0x80, 5
+        bcf     STATUS, RP0
+        wait_clk_high
+        return
 
 irq:
         movwf   IRQ_W
