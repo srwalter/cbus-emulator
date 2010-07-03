@@ -56,6 +56,7 @@ main:
         bsf     TRISB^0x80, 4
         bsf     TRISB^0x80, 5
         clrf    TRISA^0x80
+        bsf     TRISA^0x80, 4
 
         movlw   15 ; 19200 @ 20MHz
         movwf   SPBRG^0x80
@@ -76,12 +77,12 @@ wait_clk_high macro
         endm
 
 wait_data_low macro
-        btfsc   PORTB, 5
+        btfsc   PORTA, 4
         goto    $-1
         endm
 
 wait_data_high macro
-        btfss   PORTB, 5
+        btfss   PORTA, 4
         goto    $-1
         endm
 
@@ -89,7 +90,6 @@ wait_data_high macro
         wait_data_high
 
 decode_burst:
-        clrf    PORTA
         clrf    0x20
         clrf    0x21
         movlw   XFER_TMP_BUF
@@ -100,77 +100,61 @@ decode_burst:
         bcf     INTCON, GIE
         bsf     PORTB, 0
         wait_clk_high
-        movfw   PORTB
+        movfw   PORTA
         movwf   INDF
         incf    FSR, F
 
         ; Bit 1
         wait_clk_low
-        movlw   2
-        movwf   PORTA
         wait_clk_high
-        movfw   PORTB
+        movfw   PORTA
         movwf   INDF
         incf    FSR, F
 
         ; Bit 2
         wait_clk_low
-        movlw   3
-        movwf   PORTA
         wait_clk_high
-        movfw   PORTB
+        movfw   PORTA
         movwf   INDF
         incf    FSR, F
 
         ; Bit 3
         wait_clk_low
-        movlw   4
-        movwf   PORTA
         wait_clk_high
-        movfw   PORTB
+        movfw   PORTA
         movwf   INDF
         incf    FSR, F
 
         ; Bit 4
         wait_clk_low
-        movlw   5
-        movwf   PORTA
         wait_clk_high
-        movfw   PORTB
+        movfw   PORTA
         movwf   INDF
         incf    FSR, F
 
         ; Bit 5
         wait_clk_low
-        movlw   6
-        movwf   PORTA
         wait_clk_high
-        movfw   PORTB
+        movfw   PORTA
         movwf   INDF
         incf    FSR, F
 
         ; Bit 6
         wait_clk_low
-        movlw   7
-        movwf   PORTA
         wait_clk_high
-        movfw   PORTB
+        movfw   PORTA
         movwf   INDF
         incf    FSR, F
 
         ; Bit 7 (LSB)
         wait_clk_low
-        movlw   8
-        movwf   PORTA
         wait_clk_high
-        movfw   PORTB
+        movfw   PORTA
         movwf   INDF
         incf    FSR, F
 
         ; wait for delay to start
         wait_data_high
-        movlw   9
-        movwf   PORTA
 
         ; end timing-critical
         bsf     INTCON, GIE
@@ -183,14 +167,11 @@ decode_burst:
 
 decode_loop:
         rlf     0x20, F
-        btfsc   INDF, 5
+        btfsc   INDF, 4
         bsf     0x20, 0
         incf    FSR, F
         btfss   FSR, 3
         goto    decode_loop
-
-        movlw   10
-        movwf   PORTA
 
         bcf     PORTB, 0
 
@@ -228,19 +209,19 @@ send_byte:
         movwf   FSR
 
 encode_loop:
-        movlw   0xdf
+        movlw   0
         rlf     0x20, F
         btfsc   STATUS, C
-        iorlw    0x20
+        iorlw    0x10
         movwf   INDF
         incf    FSR, F
         btfss   FSR, 3
         goto    encode_loop
 
-        ; Use TRISB only since the bus is pulled high
-        bcf     PORTB, 4
-        bcf     PORTB, 5
-        
+        ; switch data line to output
+        bsf     STATUS, RP0
+        bcf     TRISA^0x80, 4
+        bcf     STATUS, RP0
         call    ack_byte
 
         movlw   XFER_TMP_BUF
@@ -249,9 +230,7 @@ encode_loop:
 
         ; Bit 0 (MSB)
         wait_clk_low
-        bsf     STATUS, RP0
-        movwf   TRISB^0x80
-        bcf     STATUS, RP0
+        movwf   PORTA
         bcf     INTCON, GIE
         wait_clk_high
         incf    FSR, F
@@ -259,63 +238,49 @@ encode_loop:
 
         ; Bit 1
         wait_clk_low
-        bsf     STATUS, RP0
-        movwf   TRISB^0x80
-        bcf     STATUS, RP0
+        movwf   PORTA
         wait_clk_high
         incf    FSR, F
         movfw   INDF
 
         ; Bit 2
         wait_clk_low
-        bsf     STATUS, RP0
-        movwf   TRISB^0x80
-        bcf     STATUS, RP0
+        movwf   PORTA
         wait_clk_high
         incf    FSR, F
         movfw   INDF
 
         ; Bit 3
         wait_clk_low
-        bsf     STATUS, RP0
-        movwf   TRISB^0x80
-        bcf     STATUS, RP0
+        movwf   PORTA
         wait_clk_high
         incf    FSR, F
         movfw   INDF
 
         ; Bit 4
         wait_clk_low
-        bsf     STATUS, RP0
-        movwf   TRISB^0x80
-        bcf     STATUS, RP0
+        movwf   PORTA
         wait_clk_high
         incf    FSR, F
         movfw   INDF
 
         ; Bit 5
         wait_clk_low
-        bsf     STATUS, RP0
-        movwf   TRISB^0x80
-        bcf     STATUS, RP0
+        movwf   PORTA
         wait_clk_high
         incf    FSR, F
         movfw   INDF
 
         ; Bit 6
         wait_clk_low
-        bsf     STATUS, RP0
-        movwf   TRISB^0x80
-        bcf     STATUS, RP0
+        movwf   PORTA
         wait_clk_high
         incf    FSR, F
         movfw   INDF
 
         ; Bit 7 (LSB)
         wait_clk_low
-        bsf     STATUS, RP0
-        movwf   TRISB^0x80
-        bcf     STATUS, RP0
+        movwf   PORTA
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -323,7 +288,7 @@ encode_loop:
         ; release data line
         wait_clk_low
         bsf     STATUS, RP0
-        bsf     TRISB^0x80, 5
+        bsf     TRISA^0x80, 4
         bcf     STATUS, RP0
 
         ; restore FSR
@@ -350,9 +315,7 @@ ack_byte:
 
         wait_clk_high
         wait_clk_low
-        bsf     STATUS, RP0
-        bcf     TRISB^0x80, 5
-        bcf     STATUS, RP0
+        bcf     PORTA, 4
 
         clrf    TMR0
         bcf     INTCON, T0IF
@@ -364,15 +327,9 @@ ack_byte:
         btfss   INTCON, T0IF
         goto    $-1
 
-        movlw   11
-        movwf   PORTA
         wait_clk_high
-        movlw   12
-        movwf   PORTA
         wait_clk_low
-        bsf     STATUS, RP0
-        bsf     TRISB^0x80, 5
-        bcf     STATUS, RP0
+        bsf     PORTA, 4
         wait_clk_high
         return
 
