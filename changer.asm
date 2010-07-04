@@ -176,10 +176,10 @@ decode_loop:
         bcf     PORTB, 0
 
         movfw   0x20
-        movwf   UART_BUF
-        bsf     STATUS, RP0
-        bsf     PIE1^0x80, TXIE
-        bcf     STATUS, RP0
+        ; movwf   UART_BUF
+        ; bsf     STATUS, RP0
+        ; bsf     PIE1^0x80, TXIE
+        ; bcf     STATUS, RP0
 
         ; sets up CMD_BUF_LEN and buffer contents
         call    command_logic
