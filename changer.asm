@@ -423,6 +423,16 @@ command_logic:
         subwf   COMMAND, W
         skpnz
         goto    cmd_e1
+
+        movlw   0x00
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_00
+
+        movlw   0xf7
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_f7
         return
 
 cmd_09:
@@ -537,6 +547,29 @@ cmd_e1:
         call    enqueue_byte
         movlw   0xff
         call    enqueue_byte
+
+        bcf     T1CON, TMR1ON
+        clrf    TMR1L
+        clrf    TMR1H
+        bcf     PIR1, TMR1IF
+        bsf     STATUS, RP0
+        bsf     PIE1^0x80, TMR1IE
+        bcf     STATUS, RP0
+        bsf     T1CON, TMR1ON
+        return
+
+        ; cmd 0x00 is sent during interrupt servicing.  rather than being
+        ; echo'ed, we reply with 0xf7
+cmd_00:
+        movlw   0xf7
+        movwf   RESP_BUF
+        return
+
+        ; cmd 0xf7 causes the interrupt line to be released
+cmd_f7:
+        bsf     STATUS, RP0
+        bsf     TRISB, 5
+        bcf     STATUS, RP0
         return
 
 enqueue_byte:
@@ -557,6 +590,8 @@ irq:
 
         btfsc   PIR1, TXIF
         call    tx_ready
+        btfsc   PIR1, TMR1IF
+        call    timer_expired
 
         swapf   IRQ_STATUS, W
         movwf   STATUS
@@ -564,6 +599,28 @@ irq:
         swapf   IRQ_W, W
         retfie
         ; end of irq
+
+timer_expired:
+        bsf     STATUS, RP0
+        movfw   PIE1^0x80
+        bcf     STATUS, RP0
+        movwf   0x20
+        btfss   0x20, TMR1IE
+        return
+
+        ; clear and disable interrupt
+        bsf     STATUS, RP0
+        bcf     PIE1^0x80, TMR1IE
+        bcf     STATUS, RP0
+        bcf     PIR1, TMR1IF
+
+        ; assert SRQ
+        bcf     PORTB, 5
+        bsf     STATUS, RP0
+        bcf     TRISB^0x80, 5
+        bcf     STATUS, RP0
+        return
+        ; end of timer_expired
 
 tx_ready:
         bsf     STATUS, RP0
