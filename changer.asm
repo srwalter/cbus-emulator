@@ -98,7 +98,7 @@ decode_burst:
 
         ; Bit 0 (MSB)
         wait_clk_low
-        bcf     INTCON, GIE
+        ;bcf     INTCON, GIE
         bsf     PORTB, 0
         wait_clk_high
         movfw   PORTA
@@ -233,7 +233,7 @@ encode_loop:
         ; Bit 0 (MSB)
         wait_clk_low
         movwf   PORTA
-        bcf     INTCON, GIE
+        ;bcf     INTCON, GIE
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -433,6 +433,11 @@ command_logic:
         subwf   COMMAND, W
         skpnz
         goto    cmd_f7
+
+        movlw   0x11
+        subwf   COMMAND, W
+        skpnz
+        goto    cmd_11
         return
 
 cmd_09:
@@ -570,6 +575,17 @@ cmd_f7:
         bsf     STATUS, RP0
         bsf     TRISB, 5
         bcf     STATUS, RP0
+        return
+
+cmd_11:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        movlw   0x04
+        call    enqueue_byte
         return
 
 enqueue_byte:
