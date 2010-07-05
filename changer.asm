@@ -322,6 +322,11 @@ ack_byte:
         btfss   INTCON, T0IF
         goto    $-1
 
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
         wait_clk_high
         wait_clk_low
         bcf     PORTA, 4
