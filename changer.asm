@@ -98,7 +98,7 @@ decode_burst:
 
         ; Bit 0 (MSB)
         wait_clk_low
-        ;bcf     INTCON, GIE
+        bcf     INTCON, GIE
         bsf     PORTB, 0
         wait_clk_high
         movfw   PORTA
@@ -233,7 +233,7 @@ encode_loop:
         ; Bit 0 (MSB)
         wait_clk_low
         movwf   PORTA
-        ;bcf     INTCON, GIE
+        bcf     INTCON, GIE
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -293,6 +293,9 @@ encode_loop:
         bsf     STATUS, RP0
         bsf     TRISA^0x80, 4
         bcf     STATUS, RP0
+
+        ; end time critical
+        bsf     INTCON, GIE
 
         ; restore FSR
         movfw   0x21
