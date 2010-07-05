@@ -8,6 +8,7 @@
         CONSTANT IRQ_STATUS=0x7e
         CONSTANT UART_BUF=0x7d
         CONSTANT COMMAND=0x7c
+        CONSTANT SRQ_COUNT=0x7b
 
         CONSTANT XFER_TMP_BUF=0x30
         CONSTANT RESP_BUF=0x40
@@ -42,6 +43,7 @@ start
 main:
         clrf    PORTA
         clrf    PORTB
+        clrf    SRQ_COUNT
         movlw   0x07
         movwf   CMCON
 
@@ -556,14 +558,7 @@ cmd_e1:
         movlw   0xff
         call    enqueue_byte
 
-        bcf     T1CON, TMR1ON
-        clrf    TMR1L
-        clrf    TMR1H
-        bcf     PIR1, TMR1IF
-        bsf     STATUS, RP0
-        bsf     PIE1^0x80, TMR1IE
-        bcf     STATUS, RP0
-        bsf     T1CON, TMR1ON
+        call    enable_timer
         return
 
         ; cmd 0x00 is sent during interrupt servicing.  rather than being
@@ -581,6 +576,45 @@ cmd_f7:
         return
 
 cmd_11:
+        incf    SRQ_COUNT, F
+        movlw   6
+        subwf   SRQ_COUNT, W
+        skpz
+        call    enable_timer
+
+        movlw   1
+        subwf   SRQ_COUNT, W
+        skpnz
+        goto    cmd_11_1
+
+        movlw   2
+        subwf   SRQ_COUNT, W
+        skpnz
+        goto    cmd_11_2
+
+        movlw   3
+        subwf   SRQ_COUNT, W
+        skpnz
+        goto    cmd_11_3
+
+        movlw   4
+        subwf   SRQ_COUNT, W
+        skpnz
+        goto    cmd_11_4
+
+        movlw   5
+        subwf   SRQ_COUNT, W
+        skpnz
+        goto    cmd_11_5
+
+        movlw   6
+        subwf   SRQ_COUNT, W
+        skpnz
+        goto    cmd_11_6
+
+        return
+
+cmd_11_1:
         movlw   0x03
         call    enqueue_byte
         movlw   0x00
@@ -588,6 +622,59 @@ cmd_11:
         movlw   0x01
         call    enqueue_byte
         movlw   0x04
+        call    enqueue_byte
+        return
+
+cmd_11_2:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x41
+        call    enqueue_byte
+        movlw   0x12
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        return
+
+cmd_11_3:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x31
+        call    enqueue_byte
+        movlw   0x43
+        call    enqueue_byte
+        movlw   0x31
+        call    enqueue_byte
+        return
+
+cmd_11_4:
+        movlw   0x02
+        call    enqueue_byte
+        movlw   0x31
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        return
+
+cmd_11_5:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        movlw   0x01
+        call    enqueue_byte
+        return
+
+cmd_11_6:
+        movlw   0x03
+        call    enqueue_byte
+        movlw   0x10
+        call    enqueue_byte
+        movlw   0x00
+        call    enqueue_byte
+        movlw   0x00
         call    enqueue_byte
         return
 
@@ -601,6 +688,18 @@ enqueue_byte:
         incf    RESP_BUF_LEN, F
         return
         ; end enqueue_byte
+
+enable_timer:
+        bcf     T1CON, TMR1ON
+        clrf    TMR1L
+        clrf    TMR1H
+        bcf     PIR1, TMR1IF
+        bsf     STATUS, RP0
+        bsf     PIE1^0x80, TMR1IE
+        bcf     STATUS, RP0
+        bsf     T1CON, TMR1ON
+        return
+        ; end enable_timer
 
 irq:
         movwf   IRQ_W
