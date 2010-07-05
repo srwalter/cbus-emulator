@@ -577,7 +577,7 @@ cmd_f7:
 
 cmd_11:
         incf    SRQ_COUNT, F
-        movlw   6
+        movlw   8
         subwf   SRQ_COUNT, W
         skpz
         call    enable_timer
@@ -600,14 +600,24 @@ cmd_11:
         movlw   4
         subwf   SRQ_COUNT, W
         skpnz
-        goto    cmd_11_4
+        goto    cmd_11_2
 
         movlw   5
         subwf   SRQ_COUNT, W
         skpnz
-        goto    cmd_11_5
+        goto    cmd_11_3
 
         movlw   6
+        subwf   SRQ_COUNT, W
+        skpnz
+        goto    cmd_11_4
+
+        movlw   7
+        subwf   SRQ_COUNT, W
+        skpnz
+        goto    cmd_11_5
+
+        movlw   8
         subwf   SRQ_COUNT, W
         skpnz
         goto    cmd_11_6
