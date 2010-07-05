@@ -47,6 +47,7 @@ main:
 
         bcf     RCSTA, SYNC
         bsf     RCSTA, SPEN
+        bsf     PORTA, 4
 
         bsf     STATUS, RP0
         bcf     OPTION_REG^0x80, T0CS
@@ -55,8 +56,8 @@ main:
         bsf     TRISB^0x80, 2
         bsf     TRISB^0x80, 4
         bsf     TRISB^0x80, 5
-        clrf    TRISA^0x80
-        bsf     TRISA^0x80, 4
+        movlw   0x10
+        movwf   TRISA^0x80
 
         movlw   15 ; 19200 @ 20MHz
         movwf   SPBRG^0x80
@@ -153,7 +154,7 @@ decode_burst:
         movwf   INDF
         incf    FSR, F
 
-        ; wait for delay to start
+        ; wait for HU to release data line
         wait_data_high
 
         ; end timing-critical
@@ -176,10 +177,10 @@ decode_loop:
         bcf     PORTB, 0
 
         movfw   0x20
-        ; movwf   UART_BUF
-        ; bsf     STATUS, RP0
-        ; bsf     PIE1^0x80, TXIE
-        ; bcf     STATUS, RP0
+        movwf   UART_BUF
+        bsf     STATUS, RP0
+        bsf     PIE1^0x80, TXIE
+        bcf     STATUS, RP0
 
         ; sets up CMD_BUF_LEN and buffer contents
         call    command_logic
@@ -218,12 +219,13 @@ encode_loop:
         btfss   FSR, 3
         goto    encode_loop
 
+        call    ack_byte
+
         ; switch data line to output
+        bsf     PORTA, 4
         bsf     STATUS, RP0
         bcf     TRISA^0x80, 4
         bcf     STATUS, RP0
-        call    ack_byte
-
         movlw   XFER_TMP_BUF
         movwf   FSR
         movfw   INDF
@@ -287,6 +289,7 @@ encode_loop:
 
         ; release data line
         wait_clk_low
+        bsf     PORTA, 4
         bsf     STATUS, RP0
         bsf     TRISA^0x80, 4
         bcf     STATUS, RP0
@@ -298,6 +301,12 @@ encode_loop:
         ; end send_byte
 
 ack_byte:
+        ; switch data line to output
+        bsf     PORTA, 4
+        bsf     STATUS, RP0
+        bcf     TRISA^0x80, 4
+        bcf     STATUS, RP0
+
         clrf    TMR0
         bcf     INTCON, T0IF
         btfss   INTCON, T0IF
@@ -330,6 +339,9 @@ ack_byte:
         wait_clk_high
         wait_clk_low
         bsf     PORTA, 4
+        bsf     STATUS, RP0
+        bsf     TRISA^0x80, 4
+        bcf     STATUS, RP0
         wait_clk_high
         return
 
