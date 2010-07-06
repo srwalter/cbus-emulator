@@ -332,19 +332,51 @@ ack_byte:
         btfss   INTCON, T0IF
         goto    $-1
 
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+
         wait_clk_high
         wait_clk_low
         bcf     PORTA, 4
 
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
+        wait_clk_high
+        wait_clk_low
 
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
+        wait_clk_high
+        wait_clk_low
+
+        wait_clk_high
+        wait_clk_low
+
+        wait_clk_high
+        wait_clk_low
 
         wait_clk_high
         wait_clk_low
@@ -443,6 +475,11 @@ command_logic:
         subwf   COMMAND, W
         skpnz
         goto    cmd_11
+
+        movlw   0x01
+        subwf   COMMAND, W
+        skpnz
+        goto    empty_cmd
         return
 
 cmd_09:
