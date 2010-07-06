@@ -479,7 +479,7 @@ command_logic:
         movlw   0x01
         subwf   COMMAND, W
         skpnz
-        goto    empty_cmd
+        goto    cmd_01
         return
 
 cmd_09:
@@ -723,6 +723,13 @@ cmd_11_6:
         call    enqueue_byte
         movlw   0x00
         call    enqueue_byte
+        return
+
+cmd_01:
+        movlw   0x00
+        call    enqueue_byte
+        ; reset SRQ count for next run
+        clrf    SRQ_COUNT
         return
 
 enqueue_byte:
