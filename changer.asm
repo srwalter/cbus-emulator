@@ -1,7 +1,7 @@
 	processor 16f648a
         include "p16f648a.inc"
         include "coff.inc"
-        __CONFIG _HS_OSC & _WDT_OFF & _CP_OFF & _LVP_OFF & _BOREN_OFF
+        __CONFIG _HS_OSC & _WDT_ON & _CP_OFF & _LVP_OFF & _BOREN_OFF
         radix dec
 
         CONSTANT IRQ_W=0x7f
@@ -89,14 +89,27 @@ wait_data_high macro
         goto    $-1
         endm
 
-        wait_clk_high
-        wait_data_high
+wait_data_high_safe macro
+        clrwdt
+        btfss   PORTA, 4
+        goto    $-2
+        endm
+
+wait_clk_high_safe macro
+        clrwdt
+        btfss   PORTB, 4
+        goto    $-2
+        endm
+
+        wait_clk_high_safe
+        wait_data_high_safe
 
 decode_burst:
         clrf    0x20
         clrf    0x21
         movlw   XFER_TMP_BUF
         movwf   FSR
+        clrwdt
 
         ; Bit 0 (MSB)
         wait_clk_low
@@ -104,11 +117,13 @@ decode_burst:
         bsf     PORTB, 0
         wait_clk_high
         movfw   PORTA
+        clrwdt
         movwf   INDF
         incf    FSR, F
 
         ; Bit 1
         wait_clk_low
+        clrwdt
         wait_clk_high
         movfw   PORTA
         movwf   INDF
@@ -116,6 +131,7 @@ decode_burst:
 
         ; Bit 2
         wait_clk_low
+        clrwdt
         wait_clk_high
         movfw   PORTA
         movwf   INDF
@@ -123,6 +139,7 @@ decode_burst:
 
         ; Bit 3
         wait_clk_low
+        clrwdt
         wait_clk_high
         movfw   PORTA
         movwf   INDF
@@ -130,6 +147,7 @@ decode_burst:
 
         ; Bit 4
         wait_clk_low
+        clrwdt
         wait_clk_high
         movfw   PORTA
         movwf   INDF
@@ -137,6 +155,7 @@ decode_burst:
 
         ; Bit 5
         wait_clk_low
+        clrwdt
         wait_clk_high
         movfw   PORTA
         movwf   INDF
@@ -144,6 +163,7 @@ decode_burst:
 
         ; Bit 6
         wait_clk_low
+        clrwdt
         wait_clk_high
         movfw   PORTA
         movwf   INDF
@@ -151,6 +171,7 @@ decode_burst:
 
         ; Bit 7 (LSB)
         wait_clk_low
+        clrwdt
         wait_clk_high
         movfw   PORTA
         movwf   INDF
@@ -158,6 +179,7 @@ decode_burst:
 
         ; wait for HU to release data line
         wait_data_high
+        clrwdt
 
         ; end timing-critical
         bsf     INTCON, GIE
@@ -173,6 +195,7 @@ decode_loop:
         btfsc   INDF, 4
         bsf     0x20, 0
         incf    FSR, F
+        clrwdt
         btfss   FSR, 3
         goto    decode_loop
 
@@ -195,6 +218,7 @@ send_next_byte:
         call    send_byte
         incf    FSR, F
         decf    RESP_BUF_LEN, F
+        clrwdt
         skpz
         goto    send_next_byte
 
@@ -218,6 +242,7 @@ encode_loop:
         iorlw    0x10
         movwf   INDF
         incf    FSR, F
+        clrwdt
         btfss   FSR, 3
         goto    encode_loop
 
@@ -233,16 +258,19 @@ encode_loop:
         movfw   INDF
 
         ; Bit 0 (MSB)
+        clrwdt
         wait_clk_low
         movwf   PORTA
         bcf     INTCON, GIE
         wait_clk_high
+        clrwdt
         incf    FSR, F
         movfw   INDF
 
         ; Bit 1
         wait_clk_low
         movwf   PORTA
+        clrwdt
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -250,6 +278,7 @@ encode_loop:
         ; Bit 2
         wait_clk_low
         movwf   PORTA
+        clrwdt
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -257,6 +286,7 @@ encode_loop:
         ; Bit 3
         wait_clk_low
         movwf   PORTA
+        clrwdt
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -264,6 +294,7 @@ encode_loop:
         ; Bit 4
         wait_clk_low
         movwf   PORTA
+        clrwdt
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -271,6 +302,7 @@ encode_loop:
         ; Bit 5
         wait_clk_low
         movwf   PORTA
+        clrwdt
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -278,6 +310,7 @@ encode_loop:
         ; Bit 6
         wait_clk_low
         movwf   PORTA
+        clrwdt
         wait_clk_high
         incf    FSR, F
         movfw   INDF
@@ -285,12 +318,14 @@ encode_loop:
         ; Bit 7 (LSB)
         wait_clk_low
         movwf   PORTA
+        clrwdt
         wait_clk_high
         incf    FSR, F
         movfw   INDF
 
         ; release data line
         wait_clk_low
+        clrwdt
         bsf     PORTA, 4
         bsf     STATUS, RP0
         bsf     TRISA^0x80, 4
@@ -308,8 +343,9 @@ encode_loop:
 delay macro
         clrf    TMR0
         bcf     INTCON, T0IF
+        clrwdt 
         btfss   INTCON, T0IF
-        goto    $-1
+        goto    $-2
         endm
         
 ack_byte:
@@ -331,28 +367,36 @@ ack_byte:
         delay
 
         wait_clk_high
+        clrwdt
         wait_clk_low
         bcf     PORTA, 4
+        clrwdt
 
         wait_clk_high
         wait_clk_low
+        clrwdt
 
         wait_clk_high
         wait_clk_low
+        clrwdt
 
         wait_clk_high
         wait_clk_low
+        clrwdt
 
         wait_clk_high
         wait_clk_low
+        clrwdt
 
         wait_clk_high
         wait_clk_low
+        clrwdt
         bsf     PORTA, 4
         bsf     STATUS, RP0
         bsf     TRISA^0x80, 4
         bcf     STATUS, RP0
         wait_clk_high
+        clrwdt
         return
 
 command_logic:
@@ -364,81 +408,97 @@ command_logic:
         incf    FSR, F
         incf    RESP_BUF_LEN, F
 
+        clrwdt
         movlw   0x09
         subwf   COMMAND, W
         skpnz
         goto    cmd_09
 
+        clrwdt
         movlw   0x4c
         subwf   COMMAND, W
         skpnz
         goto    cmd_4c
 
+        clrwdt
         movlw   0x45
         subwf   COMMAND, W
         skpnz
         goto    cmd_45
 
+        clrwdt
         movlw   0x4b
         subwf   COMMAND, W
         skpnz
         goto    cmd_4b
 
+        clrwdt
         movlw   0x41
         subwf   COMMAND, W
         skpnz
         goto    cmd_41
 
+        clrwdt
         movlw   0x50
         subwf   COMMAND, W
         skpnz
         goto    cmd_50
 
+        clrwdt
         movlw   0x51
         subwf   COMMAND, W
         skpnz
         goto    cmd_51
 
+        clrwdt
         movlw   0xe2
         subwf   COMMAND, W
         skpnz
         goto    cmd_e2
 
+        clrwdt
         movlw   0x61
         subwf   COMMAND, W
         skpnz
         goto    empty_cmd
 
+        clrwdt
         movlw   0x70
         subwf   COMMAND, W
         skpnz
         goto    empty_cmd
 
+        clrwdt
         movlw   0x81
         subwf   COMMAND, W
         skpnz
         goto    empty_cmd
 
+        clrwdt
         movlw   0x5c
         subwf   COMMAND, W
         skpnz
         goto    cmd_5c
 
+        clrwdt
         movlw   0xe1
         subwf   COMMAND, W
         skpnz
         goto    cmd_e1
 
+        clrwdt
         movlw   0x00
         subwf   COMMAND, W
         skpnz
         goto    cmd_00
 
+        clrwdt
         movlw   0xf7
         subwf   COMMAND, W
         skpnz
         goto    cmd_f7
 
+        clrwdt
         movlw   0x11
         subwf   COMMAND, W
         skpnz
@@ -606,41 +666,49 @@ cmd_11:
         skpz
         call    enable_timer
 
+        clrwdt
         movlw   1
         subwf   SRQ_COUNT, W
         skpnz
         goto    cmd_11_1
 
+        clrwdt
         movlw   2
         subwf   SRQ_COUNT, W
         skpnz
         goto    cmd_11_2
 
+        clrwdt
         movlw   3
         subwf   SRQ_COUNT, W
         skpnz
         goto    cmd_11_3
 
+        clrwdt
         movlw   4
         subwf   SRQ_COUNT, W
         skpnz
         goto    cmd_11_2
 
+        clrwdt
         movlw   5
         subwf   SRQ_COUNT, W
         skpnz
         goto    cmd_11_3
 
+        clrwdt
         movlw   6
         subwf   SRQ_COUNT, W
         skpnz
         goto    cmd_11_4
 
+        clrwdt
         movlw   7
         subwf   SRQ_COUNT, W
         skpnz
         goto    cmd_11_5
 
+        clrwdt
         movlw   8
         subwf   SRQ_COUNT, W
         skpnz
