@@ -305,6 +305,13 @@ encode_loop:
         return
         ; end send_byte
 
+delay macro
+        clrf    TMR0
+        bcf     INTCON, T0IF
+        btfss   INTCON, T0IF
+        goto    $-1
+        endm
+        
 ack_byte:
         ; switch data line to output
         bsf     PORTA, 4
@@ -312,55 +319,16 @@ ack_byte:
         bcf     TRISA^0x80, 4
         bcf     STATUS, RP0
 
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
-
-        clrf    TMR0
-        bcf     INTCON, T0IF
-        btfss   INTCON, T0IF
-        goto    $-1
+        delay
+        delay
+        delay
+        delay
+        delay
+        delay
+        delay
+        delay
+        delay
+        delay
 
         wait_clk_high
         wait_clk_low
