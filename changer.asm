@@ -444,6 +444,25 @@ command_logic:
         skpnz
         goto    cmd_11
 
+        clrwdt
+        movlw   0x62
+        subwf   COMMAND, W
+        skpnz
+        goto    empty_cmd
+
+        clrwdt
+        movlw   0x70
+        subwf   COMMAND, W
+        skpnz
+        goto    empty_cmd
+
+        clrwdt
+        movlw   0x81
+        subwf   COMMAND, W
+        skpnz
+        goto    empty_cmd
+
+        clrwdt
         movlw   0x01
         subwf   COMMAND, W
         skpnz
