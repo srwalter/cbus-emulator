@@ -40,38 +40,15 @@ start
         nop
         goto irq
 
-main:
-        clrf    PORTA
-        clrf    PORTB
-        clrf    SRQ_COUNT
-        movlw   0x07
-        movwf   CMCON
-
-        bcf     RCSTA, SYNC
-        bsf     RCSTA, SPEN
-        bsf     PORTA, 4
-
-        bsf     STATUS, RP0
-        bcf     OPTION_REG^0x80, T0CS
-        bcf     TRISB^0x80, 0
-        bsf     TRISB^0x80, 1
-        bsf     TRISB^0x80, 2
-        bsf     TRISB^0x80, 4
-        bsf     TRISB^0x80, 5
-        movlw   0x10
-        movwf   TRISA^0x80
-
-        movlw   15 ; 19200 @ 20MHz
-        movwf   SPBRG^0x80
-        bsf     TXSTA^0x80, TXEN
-        bcf     STATUS, RP0
-
-        bsf     INTCON, GIE
-        bsf     INTCON, PEIE
-
 wait_clk_low macro
         btfsc   PORTB, 4
         goto    $-1
+        endm
+
+wait_clk_low_safe macro
+        clrwdt
+        btfsc   PORTB, 4
+        goto    $-2
         endm
 
 wait_clk_high macro
@@ -101,6 +78,35 @@ wait_clk_high_safe macro
         goto    $-2
         endm
 
+main:
+        clrf    PORTA
+        clrf    PORTB
+        clrf    SRQ_COUNT
+        movlw   0x07
+        movwf   CMCON
+
+        bcf     RCSTA, SYNC
+        bsf     RCSTA, SPEN
+        bsf     PORTA, 4
+
+        bsf     STATUS, RP0
+        bcf     OPTION_REG^0x80, T0CS
+        bcf     TRISB^0x80, 0
+        bsf     TRISB^0x80, 1
+        bsf     TRISB^0x80, 2
+        bsf     TRISB^0x80, 4
+        bsf     TRISB^0x80, 5
+        movlw   0x10
+        movwf   TRISA^0x80
+
+        movlw   15 ; 19200 @ 20MHz
+        movwf   SPBRG^0x80
+        bsf     TXSTA^0x80, TXEN
+        bcf     STATUS, RP0
+
+        bsf     INTCON, GIE
+        bsf     INTCON, PEIE
+
         wait_clk_high_safe
         wait_data_high_safe
 
@@ -112,7 +118,7 @@ decode_burst:
         clrwdt
 
         ; Bit 0 (MSB)
-        wait_clk_low
+        wait_clk_low_safe
         bcf     INTCON, GIE
         bsf     PORTB, 0
         wait_clk_high
