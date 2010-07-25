@@ -1,14 +1,13 @@
-	processor 16f648a
-        include "p16f648a.inc"
+	processor 16f716
+        include "p16f716.inc"
         include "coff.inc"
-        __CONFIG _HS_OSC & _WDT_ON & _CP_OFF & _LVP_OFF & _BOREN_OFF
+        __CONFIG _HS_OSC & _WDT_ON & _CP_OFF & _BOREN_OFF
         radix dec
 
         CONSTANT IRQ_W=0x7f
         CONSTANT IRQ_STATUS=0x7e
-        CONSTANT UART_BUF=0x7d
-        CONSTANT COMMAND=0x7c
-        CONSTANT SRQ_COUNT=0x7b
+        CONSTANT COMMAND=0x7d
+        CONSTANT SRQ_COUNT=0x7c
 
         CONSTANT XFER_TMP_BUF=0x30
         CONSTANT RESP_BUF=0x40
@@ -82,11 +81,6 @@ main:
         clrf    PORTA
         clrf    PORTB
         clrf    SRQ_COUNT
-        movlw   0x07
-        movwf   CMCON
-
-        bcf     RCSTA, SYNC
-        bsf     RCSTA, SPEN
         bsf     PORTA, 4
 
         bsf     STATUS, RP0
@@ -98,10 +92,6 @@ main:
         bsf     TRISB^0x80, 5
         movlw   0x10
         movwf   TRISA^0x80
-
-        movlw   15 ; 19200 @ 20MHz
-        movwf   SPBRG^0x80
-        bsf     TXSTA^0x80, TXEN
         bcf     STATUS, RP0
 
         bsf     INTCON, GIE
@@ -206,14 +196,8 @@ decode_loop:
         goto    decode_loop
 
         bcf     PORTB, 0
-
-        movfw   0x20
-        movwf   UART_BUF
-        bsf     STATUS, RP0
-        bsf     PIE1^0x80, TXIE
-        bcf     STATUS, RP0
-
         ; sets up CMD_BUF_LEN and buffer contents
+        movfw   0x20
         call    command_logic
 
         movlw   RESP_BUF
@@ -821,8 +805,6 @@ irq:
         swapf   STATUS, W
         movwf   IRQ_STATUS
 
-        btfsc   PIR1, TXIF
-        call    tx_ready
         btfsc   PIR1, TMR1IF
         call    timer_expired
 
@@ -854,21 +836,5 @@ timer_expired:
         bcf     STATUS, RP0
         return
         ; end of timer_expired
-
-tx_ready:
-        bsf     STATUS, RP0
-        movfw   PIE1^0x80
-        bcf     STATUS, RP0
-        movwf   0x20
-        btfss   0x20, TXIE
-        return
-
-        bsf     STATUS, RP0
-        bcf     PIE1^0x80, TXIE
-        bcf     STATUS, RP0
-        movfw   UART_BUF
-        movwf   TXREG
-        return
-        ; end of tx_ready
 
         end
